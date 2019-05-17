@@ -12,6 +12,7 @@ class User(UserMixin, db.Model):
     imgurl = db.Column(db.String(500))
     password_hash = db.Column(db.String(128), nullable=False)
     is_broker = db.Column(db.Boolean)
+    phone = db.Column(db.String(30))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -28,14 +29,32 @@ class House(db.Model):
     ward = db.Column(db.String(50))
     street = db.Column(db.String(50))
     number = db.Column(db.String(50))
-    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
-    user = db.relationship(User)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    broker_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    room_id = db.Column(db.Integer, unique=True)
+
+    # add two ids to make a unique room chat id
+    def set_roomid(self, broker_id):
+        self.room_id = int(str(self.id) + str(broker_id))
+
+    # check if house is chosen
+    def is_chosen(self):
+        if self.broker_id:
+            return True
+        return False
+
 
 class Token(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
     user = db.relationship(User)
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey(User.id), nullable=False)
 
 
 @login.user_loader
@@ -54,3 +73,4 @@ def load_user_from_request(request):
             return token.user
 
     return None
+
